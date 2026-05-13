@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime
 
 # SQLite veritabanı dosyası
@@ -10,7 +9,19 @@ engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Tema 4: Stok ve Envanter Yönetimi için Ürün Modeli
+# 1. MÜŞTERİLER TABLOSU
+class Customer(Base):
+    __tablename__ = "customers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    full_name = Column(String, index=True)
+    phone = Column(String)
+    city = Column(String) # Kargo gecikmelerini veya rotaları belirlemek için
+    
+    # Bir müşterinin birden fazla siparişi olabilir (One-to-Many)
+    orders = relationship("Order", back_populates="customer")
+
+# 2. ÜRÜNLER TABLOSU
 class Product(Base):
     __tablename__ = "products"
 
@@ -21,20 +32,28 @@ class Product(Base):
     stock_quantity = Column(Integer) # Mevcut Stok
     category = Column(String) # Gıda, El Sanatları vb.
 
-# Tema 2 & 3: Sipariş ve Kargo Takibi için Sipariş Modeli
+# Bir ürüne ait birden fazla sipariş kaydı olabilir (One-to-Many)
+    orders = relationship("Order", back_populates="product")
+
+
+# 3. SİPARİŞLER TABLOSU (İlişki Merkezi)
 class Order(Base):
     __tablename__ = "orders"
 
     id = Column(Integer, primary_key=True, index=True)
-    customer_name = Column(String)
-    product_id = Column(ForeignKey("products.id"))
+# Foreign Key bağlantıları
+    customer_id = Column(Integer, ForeignKey("customers.id"))
+    product_id = Column(Integer, ForeignKey("products.id"))
+    
     quantity = Column(Integer)
     status = Column(String, default="Hazırlanıyor") # Hazırlanıyor, Kargolandı, Teslim Edildi
-    tracking_code = Column(String, nullable=True) # Kargo Takip Kodu
+    tracking_code = Column(String, nullable=True) 
     order_date = Column(DateTime, default=datetime.utcnow)
+    
+    # İlişki (Relationship) Tanımlamaları
+    customer = relationship("Customer", back_populates="orders")
+    product = relationship("Product", back_populates="orders")
 
-    product = relationship("Product")
-
-# Tabloları oluşturma fonksiyonu
+# Veritabanı ve tabloları oluşturur
 def create_db():
     Base.metadata.create_all(bind=engine)

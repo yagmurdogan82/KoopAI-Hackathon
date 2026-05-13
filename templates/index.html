@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KoopAI - Hatay Kadın Kooperatifi Yönetimi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        /* Sidebar Tasarımı */
         .sidebar { min-height: 100vh; background-color: #2c3e2e; color: white; transition: all 0.3s; }
         .sidebar .nav-link { color: rgba(255,255,255,.8); padding: 15px 20px; border-radius: 5px; margin: 5px 15px; cursor: pointer; }
         .sidebar .nav-link:hover, .sidebar .nav-link.active { background-color: #4b6b50; color: white; }
@@ -20,7 +21,6 @@
         .dashboard-card:hover { transform: translateY(-5px); }
         .card-icon { font-size: 2.5rem; opacity: 0.2; position: absolute; right: 20px; top: 20px; }
         
-        /* Chatbot Tasarımı */
         #chat-widget {
             position: fixed; bottom: 20px; right: 20px; width: 360px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-radius: 15px;
@@ -40,7 +40,6 @@
         }
         #chat-toggle:hover { transform: scale(1.1); }
 
-        /* Sayfa İçerik Bölümleri için Sınıf */
         .content-section { display: none; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -69,8 +68,14 @@
                 <a class="nav-link" onclick="showSection('sec-analitik', this)"><i class="fas fa-chart-line me-3"></i>Satış Analitiği</a>
             </li>
         </ul>
-        <div class="p-3 text-center border-top border-secondary">
-            <small class="text-muted">Giriş Yapan:<br><b>Zeynep Hanım (Yönetici)</b></small>
+        <div class="p-3 border-top border-secondary">
+            <div class="d-flex align-items-center justify-content-center text-start">
+                <i class="fas fa-user-circle fs-2 text-success me-2"></i>
+                <div>
+                    <small class="text-white-50" style="font-size: 0.8rem;">Giriş Yapan:</small><br>
+                    <b class="text-white" style="letter-spacing: 0.5px;">Yağmur Doğan <small class="text-success">(Yönetici)</small></b>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -79,7 +84,6 @@
         <div id="sec-ozet" class="content-section" style="display: block;">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="h3 text-gray-800">Günlük Operasyon Özeti</h2>
-                <button class="btn btn-success"><i class="fas fa-sync-alt me-2"></i>Verileri Yenile</button>
             </div>
             <div class="row g-4 mb-4">
                 <div class="col-md-4">
@@ -87,7 +91,7 @@
                         <div class="card-body">
                             <i class="fas fa-shopping-cart text-primary card-icon"></i>
                             <h6 class="text-muted text-uppercase fw-bold mb-2">Bekleyen Siparişler</h6>
-                            <h2 class="mb-0 text-dark">12 <small class="text-success fs-6"><i class="fas fa-arrow-up"></i> %5</small></h2>
+                            <h2 class="mb-0 text-dark"><span id="count-bekleyen">0</span> <small class="text-success fs-6"><i class="fas fa-arrow-up"></i></small></h2>
                             <div class="mt-3"><button class="btn btn-sm btn-outline-primary w-100" onclick="showSection('sec-siparis', document.querySelectorAll('.nav-link')[1])"><i class="fas fa-eye me-1"></i> Detayları Gör</button></div>
                         </div>
                     </div>
@@ -97,7 +101,7 @@
                         <div class="card-body">
                             <i class="fas fa-truck-fast text-warning card-icon"></i>
                             <h6 class="text-muted text-uppercase fw-bold mb-2">Kargoya Verilecekler</h6>
-                            <h2 class="mb-0 text-dark">8</h2>
+                            <h2 class="mb-0 text-dark"><span id="count-kargo">0</span></h2>
                             <div class="mt-3"><button class="btn btn-sm btn-outline-warning text-dark w-100" onclick="showSection('sec-kargo', document.querySelectorAll('.nav-link')[3])"><i class="fas fa-print me-1"></i> İşlemlere Git</button></div>
                         </div>
                     </div>
@@ -105,7 +109,6 @@
                 <div class="col-md-4">
                     <div class="card dashboard-card h-100 p-3 border-start border-success border-4">
                         <div class="card-body">
-                            <i class="fas fa-lira-sign text-success card-icon"></i>
                             <h6 class="text-muted text-uppercase fw-bold mb-2">Aylık Toplam Satış</h6>
                             <h2 class="mb-0 text-dark">₺45,250</h2>
                             <div class="mt-3"><button class="btn btn-sm btn-outline-success w-100" onclick="showSection('sec-analitik', document.querySelectorAll('.nav-link')[4])"><i class="fas fa-chart-pie me-1"></i> Raporlara Git</button></div>
@@ -120,15 +123,85 @@
             <div class="card dashboard-card">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">Son Siparişler</h6>
-                    <button class="btn btn-sm btn-primary"><i class="fas fa-robot me-1"></i> AI ile Toplu Onayla</button>
+                    <button class="btn btn-sm btn-primary" onclick="batchApproveAI()"><i class="fas fa-robot me-1"></i> AI ile Toplu Onayla</button>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-hover mb-0 align-middle">
-                        <thead class="table-light"><tr><th>Sipariş No</th><th>Müşteri</th><th>Ürün</th><th>Tarih</th><th>Durum</th><th>İşlem</th></tr></thead>
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sipariş No</th>
+                                <th>Müşteri</th>
+                                <th>Ürün</th>
+                                <th>Miktar</th>
+                                <th>Tarih</th>
+                                <th>Durum</th>
+                                <th>İşlem</th>
+                            </tr>
+                        </thead>
                         <tbody>
-                            <tr><td>#ORD-1042</td><td>Ayşe Demir</td><td>Soğuk Sıkım Zeytinyağı</td><td>Bugün 10:15</td><td><span class="badge bg-warning text-dark">Bekliyor</span></td><td><button class="btn btn-sm btn-success">Onayla</button></td></tr>
-                            <tr><td>#ORD-1041</td><td>Mehmet Yılmaz</td><td>Defne Sabunu (3x)</td><td>Dün 16:45</td><td><span class="badge bg-info">Hazırlanıyor</span></td><td><button class="btn btn-sm btn-primary">Fatura Kes</button></td></tr>
-                            <tr><td>#ORD-1040</td><td>Zeynep Kaya</td><td>Acı Biber Salçası</td><td>Dün 14:20</td><td><span class="badge bg-success">Kargolandı</span></td><td><button class="btn btn-sm btn-secondary" disabled>Tamamlandı</button></td></tr>
+                            <tr>
+                                <td>#ORD-1046</td>
+                                <td>Ali Tekin</td>
+                                <td>Soğuk Sıkım Zeytinyağı</td>
+                                <td><strong>2 Şişe</strong></td>
+                                <td>Bugün 14:10</td>
+                                <td><span class="badge bg-warning text-dark">Bekliyor</span></td>
+                                <td><button class="btn btn-sm btn-success" onclick="approveOrder('#ORD-1046', 'Ali Tekin', this)">Onayla</button></td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-1045</td>
+                                <td>Berna Kuzgun</td>
+                                <td>Defne Sabunu</td>
+                                <td><strong>5 Kalıp</strong></td>
+                                <td>Bugün 13:30</td>
+                                <td><span class="badge bg-warning text-dark">Bekliyor</span></td>
+                                <td><button class="btn btn-sm btn-success" onclick="approveOrder('#ORD-1045', 'Berna Gunes', this)">Onayla</button></td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-1044</td>
+                                <td>Cemil Toprak</td>
+                                <td>Nar Ekşisi</td>
+                                <td><strong>1 Şişe</strong></td>
+                                <td>Bugün 12:45</td>
+                                <td><span class="badge bg-warning text-dark">Bekliyor</span></td>
+                                <td><button class="btn btn-sm btn-success" onclick="approveOrder('#ORD-1044', 'Cemil Toprak', this)">Onayla</button></td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-1043</td>
+                                <td>Fatma Kurt</td>
+                                <td>Nar Ekşisi</td>
+                                <td><strong>2 Şişe</strong></td>
+                                <td>Bugün 12:45</td>
+                                <td><span class="badge bg-warning text-dark">Bekliyor</span></td>
+                                <td><button class="btn btn-sm btn-success" onclick="approveOrder('#ORD-1043', 'Fatma Kurt', this)">Onayla</button></td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-1042</td>
+                                <td>Aysel Demir</td>
+                                <td>Soğuk Sıkım Zeytinyağı</td>
+                                <td><strong>1 Litre</strong></td>
+                                <td>Bugün 10:15</td>
+                                <td><span class="badge bg-warning text-dark">Bekliyor</span></td>
+                                <td><button class="btn btn-sm btn-success" onclick="approveOrder('#ORD-1042', 'Aysel Demir', this)">Onayla</button></td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-1041</td>
+                                <td>Mehmet Dalmaz</td>
+                                <td>Defne Sabunu</td>
+                                <td><strong>3 Kalıp</strong></td>
+                                <td>Dün 16:45</td>
+                                <td><span class="badge bg-info">Hazırlanıyor</span></td>
+                                <td><button class="btn btn-sm btn-primary" onclick="generateInvoice('#ORD-1041', 'Mehmet Dalmaz', 'Defne Sabunu (3 Kalıp)', '360.00 TL', this)"><i class="fas fa-file-invoice-dollar me-1"></i> Fatura Kes</button></td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-1040</td>
+                                <td>Zeynep Kaya</td>
+                                <td>Acı Biber Salçası</td>
+                                <td><strong>1 Kavanoz</strong></td>
+                                <td>Dün 14:20</td>
+                                <td><span class="badge bg-success">Kargolandı</span></td>
+                                <td><button class="btn btn-sm btn-secondary" disabled>Tamamlandı</button></td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -146,16 +219,16 @@
                         <div class="card-body">
                             <h5 class="card-title">Cevizli Sucuk</h5>
                             <p class="card-text text-danger fw-bold">Stok: 5 Paket (Kritik)</p>
-                            <button class="btn btn-danger w-100"><i class="fas fa-envelope"></i> Üreticiye Otomatik Mail At</button>
+                            <button class="btn btn-danger w-100" onclick="prepareSupplierMail('Cevizli Sucuk')"><i class="fas fa-envelope"></i> Üreticiye Otomatik Mail At</button>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Zeytinyağı (1L)</h5>
+                            <h5 class="card-title">Soğuk Sıkım Zeytinyağı (1L)</h5>
                             <p class="card-text text-success fw-bold">Stok: 50 Şişe (İyi)</p>
-                            <button class="btn btn-outline-secondary w-100">Stok Güncelle</button>
+                            <button class="btn btn-outline-secondary w-100" onclick="updateStock(this, 'Zeytinyağı (1L)', 'Şişe')">Stok Güncelle</button>
                         </div>
                     </div>
                 </div>
@@ -164,7 +237,25 @@
                         <div class="card-body">
                             <h5 class="card-title">Defne Sabunu</h5>
                             <p class="card-text text-success fw-bold">Stok: 150 Adet (İyi)</p>
-                            <button class="btn btn-outline-secondary w-100">Stok Güncelle</button>
+                            <button class="btn btn-outline-secondary w-100" onclick="updateStock(this, 'Defne Sabunu', 'Adet')">Stok Güncelle</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-dark">Acı Biber Salçası</h5>
+                            <p class="text-success fw-bold mb-3">Stok: 45 Kavanoz (İyi)</p>
+                            <button class="btn btn-outline-secondary w-100" onclick="updateStock(this, 'Acı Biber Salçası', 'Kavanoz')">Stok Güncelle</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-dark">Nar Ekşisi</h5>
+                            <p class="text-success fw-bold mb-3">Stok: 30 Şişe (İyi)</p>
+                            <button class="btn btn-outline-secondary w-100" onclick="updateStock(this, 'Nar Ekşisi', 'Şişe')">Stok Güncelle</button>
                         </div>
                     </div>
                 </div>
@@ -176,6 +267,9 @@
             <div class="card dashboard-card">
                 <div class="card-body">
                     <h5 class="mb-4">Aktif Teslimatlar</h5>
+
+                    <div id="dynamic-kargo-list"></div>
+
                     <div class="mb-4">
                         <p class="mb-1 fw-bold">#ORD-1040 - Zeynep Kaya (İstanbul) <span class="float-end text-success">Teslimatta</span></p>
                         <div class="progress" style="height: 15px;">
@@ -189,7 +283,7 @@
                         </div>
                     </div>
                     <hr>
-                    <button class="btn btn-success"><i class="fas fa-magic me-2"></i>KoopAI Müşterilere SMS Gönder</button>
+                    <button class="btn btn-success" onclick="sendKargoNotification()"><i class="fas fa-magic me-2"></i>KoopAI Müşterilere SMS Gönder</button>
                 </div>
             </div>
         </div>
@@ -209,7 +303,7 @@
                         <div class="card-body">
                             <p><i class="fas fa-check-circle text-success me-2"></i>Zeytinyağı satışları geçen aya göre <strong>%15</strong> artış gösterdi.</p>
                             <p><i class="fas fa-lightbulb text-warning me-2"></i><strong>Öneri:</strong> Havalar soğuyor, kışlık ürün (Salça, Nar Ekşisi) kampanyaları başlatmak dönüşüm oranını artırabilir.</p>
-                            <button class="btn btn-primary mt-3"><i class="fas fa-file-pdf me-2"></i>Detaylı Rapor İndir</button>
+                            <button class="btn btn-primary mt-3" onclick="downloadReport()"><i class="fas fa-file-pdf me-2"></i>Detaylı Rapor İndir</button>
                         </div>
                     </div>
                 </div>
@@ -236,21 +330,16 @@
 </div>
 
 <script>
-    // Sekmeler Arası Geçiş (Single Page Application Mantığı)
+    // Sekmeler Arası Geçiş
     function showSection(sectionId, element) {
-        // Tüm bölümleri gizle
         const sections = document.querySelectorAll('.content-section');
         sections.forEach(sec => sec.style.display = 'none');
-        
-        // İstenilen bölümü göster
         document.getElementById(sectionId).style.display = 'block';
         
-        // Menüdeki aktif stili güncelle
         const links = document.querySelectorAll('.sidebar .nav-link');
         links.forEach(link => link.classList.remove('active'));
         if(element) element.classList.add('active');
 
-        // Analitik grafiğini yeniden çizmesi için tetikleme
         if(sectionId === 'sec-analitik' || sectionId === 'sec-ozet') {
             salesChart.update();
         }
@@ -267,7 +356,7 @@
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
     });
 
-    // Chat Penceresi
+    // Chat Penceresi Kontrolleri
     function toggleChat() {
         const chatWidget = document.getElementById('chat-widget');
         const chatToggle = document.getElementById('chat-toggle');
@@ -311,6 +400,390 @@
             chatMessages.innerHTML += `<div class="message bot-message text-danger"><i class="fas fa-exclamation-triangle me-1"></i> Sunucuya bağlanılamadı.</div>`;
         }
         chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // --- İŞLEVSEL FONKSİYONLAR ---
+
+// TEKLİ SİPARİŞ ONAYLAMA VE ARAYÜZ GÜNCELLEME
+function approveOrder(orderId, customerName, btnElement) {
+        Swal.fire({
+            title: 'Siparişi Onayla',
+            text: `${customerName} isimli müşterinin ${orderId} numaralı siparişi hazırlık aşamasına alınsın mı?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#4b6b50',
+            confirmButtonText: 'Evet, Onayla',
+            cancelButtonText: 'İptal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire('Onaylandı!', 'Sipariş depo sorumlusuna iletildi.', 'success');
+                
+                // 1. Etiketi (Badge) Güncelle: Bekliyor -> Hazırlanıyor
+                const tr = btnElement.closest('tr'); // Butonun bulunduğu satırı bul
+                const statusCell = tr.cells[5]; // Durum sütununu seç
+                statusCell.innerHTML = '<span class="badge bg-info">Hazırlanıyor</span>';
+
+                // --- YENİ: SİPARİŞİ STOKTAN DÜŞ ---
+                const productName = tr.cells[2].innerText;
+                const quantityText = tr.cells[3].innerText;
+                syncStockOnApproval(productName, quantityText);
+
+                // 2. Butonu Güncelle: Onayla -> Fatura Kes
+                const product = tr.cells[2].innerText;
+                const actionCell = tr.cells[6]; // İşlem sütununu seç
+                actionCell.innerHTML = `<button class="btn btn-sm btn-primary" onclick="generateInvoice('${orderId}', '${customerName}', '${product}', 'Sistem Hesabı', this)"><i class="fas fa-file-invoice-dollar me-1"></i> Fatura Kes</button>`;
+
+                updateDashboardCounts();
+            }
+        });
+    }
+
+    // AI İLE TOPLU ONAYLAMA 
+    function batchApproveAI() {
+        Swal.fire({
+            title: 'KoopAI Devrede',
+            text: 'Bekleyen tüm siparişler stok kontrolünden geçirilip toplu onaylanacak. Emin misiniz?',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#4b6b50',
+            confirmButtonText: 'Evet, Otomatik Onayla',
+            cancelButtonText: 'İptal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Yapay zeka çalışıyor animasyonu
+                Swal.fire({
+                    title: 'Yapay Zeka Analiz Ediyor...',
+                    html: 'Stoklar kontrol ediliyor ve siparişler eşleştiriliyor...',
+                    timer: 2000,
+                    timerProgressBar: true,
+                    didOpen: () => { Swal.showLoading(); }
+                }).then(() => {
+                    // Tablodaki tüm satırları tara
+                    const rows = document.querySelectorAll('#sec-siparis table tbody tr');
+                    let approvedCount = 0;
+
+                    rows.forEach(tr => {
+                        const statusCell = tr.cells[5];
+                        // Eğer sipariş "Bekliyor" ise işlem yap
+                        if (statusCell && statusCell.innerText.includes('Bekliyor')) {
+                            // Durumu değiştir
+                            statusCell.innerHTML = '<span class="badge bg-info">Hazırlanıyor</span>';
+                            
+                            // --- YENİ: SİPARİŞİ STOKTAN DÜŞ ---
+                            const productName = tr.cells[2].innerText;
+                            const quantityText = tr.cells[3].innerText;
+                            syncStockOnApproval(productName, quantityText);
+
+                            // Butonu Fatura Kes'e çevir
+                            const orderId = tr.cells[0].innerText;
+                            const customerName = tr.cells[1].innerText;
+                            const product = tr.cells[2].innerText;
+                            const actionCell = tr.cells[6];
+                            actionCell.innerHTML = `<button class="btn btn-sm btn-primary" onclick="generateInvoice('${orderId}', '${customerName}', '${product}', 'Sistem Hesabı')"><i class="fas fa-file-invoice-dollar me-1"></i> Fatura Kes</button>`;
+                            
+                            approvedCount++;
+                        }
+                    });
+
+                    // Sonuç Bildirimi
+                    if(approvedCount > 0) {
+                        Swal.fire('Başarılı!', `${approvedCount} adet sipariş KoopAI tarafından tek seferde onaylandı ve hazırlık aşamasına alındı.`, 'success');
+
+                        updateDashboardCounts();
+                    } else {
+                        Swal.fire('Bilgi', 'Şu an onay bekleyen yeni bir sipariş bulunmuyor.', 'info');
+                    }
+                });
+            }
+        });
+    }
+
+    async function prepareSupplierMail(productName) {
+        toggleChat();
+        const chatInput = document.getElementById('chat-input');
+        const prompt = `${productName} stoğu bitti. Üreticiye nazik, Hatay şivesiyle samimi bir tedarik maili taslağı hazırlar mısın?`;
+        chatInput.value = prompt;
+        sendMessage();
+    }
+
+ // Kargo Bilgilendirme SMS/Mesaj Gönderimi (Gerçek API Bağlantılı)
+    function sendKargoNotification() {
+        Swal.fire({
+            title: 'KoopAI Otomasyonu',
+            text: 'Teslimatı bekleyen müşteriler tespit ediliyor. Özel kargo SMS\'leri Gemini ile oluşturulup gönderilsin mi?',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#4b6b50',
+            confirmButtonText: 'Evet, Gönder',
+            cancelButtonText: 'İptal'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                
+                // Yükleniyor animasyonu başlat
+                Swal.fire({
+                    title: 'SMS\'ler Hazırlanıyor...',
+                    html: 'KoopAI müşterileriniz için samimi mesajlar yazıyor...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                try {
+                    // FastAPI Backend'ine İsteği Atıyoruz
+                    const response = await fetch('/api/otomatik-sms', { method: 'POST' });
+                    const data = await response.json();
+
+                    // Başarılı olursa üretilen yapay zeka mesajını ekranda göster
+                    Swal.fire({
+                        title: 'Tamamlandı!',
+                        html: `<p>Tüm müşterilere kargo bilgisi iletildi.</p>
+                               <hr>
+                               <div class="text-start bg-light p-3 rounded text-muted" style="font-size: 0.9em;">
+                                 <strong>Gönderilen Taslak:</strong><br>${data.uretilen_sms}
+                               </div>`,
+                        icon: 'success',
+                        confirmButtonColor: '#4b6b50'
+                    });
+                } catch (error) {
+                    Swal.fire('Hata', 'Sunucu ile iletişim kurulamadı.', 'error');
+                }
+            }
+        });
+    }
+
+// Analiz Raporu İndirme 
+function downloadReport() {
+        Swal.fire({
+            title: 'Rapor Hazırlanıyor',
+            text: 'Geçmiş 3 aylık satış ve stok verileri KoopAI tarafından analiz ediliyor...',
+            timer: 1500,
+            showConfirmButton: false,
+            didOpen: () => { Swal.showLoading(); }
+        }).then(() => {
+            // 1. jsPDF kütüphanesini başlat
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // 2. PDF İçeriğini Oluştur (Türkçe karakter sorunu olmaması için İngilizce harflerle)
+            doc.setFontSize(22);
+            doc.setTextColor(75, 107, 80); // KoopAI Yeşil Rengi
+            doc.text("KoopAI Aylik Satis ve Icgoru Raporu", 20, 20);
+
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text("Tarih: " + new Date().toLocaleDateString('tr-TR'), 20, 30);
+            doc.text("----------------------------------------------------------------", 20, 40);
+            
+            doc.setFontSize(14);
+            doc.text("Ozet Metrikler:", 20, 50);
+            doc.setFontSize(12);
+            doc.text("* Toplam Satis: 45,250 TL", 25, 60);
+            doc.text("* Bekleyen Siparis: 12 Adet", 25, 70);
+            
+            doc.setFontSize(14);
+            doc.text("Yapay Zeka (KoopAI) Icgoruleri:", 20, 90);
+            doc.setFontSize(12);
+            doc.text("1. Soguk Sikim Zeytinyagi satislari gecen aya gore %15 artis gosterdi.", 25, 100);
+            doc.text("2. Cevizli Sucuk stogu kritik seviyede! (Kalan: 5 Paket)", 25, 110);
+            doc.text("3. Oneri: Havalar soguyor, kislik urun (Salça, Nar Eksisi)", 25, 120);
+            doc.text("   kampanyalari baslatmak donusum oranini artirabilir.", 25, 130);
+            
+            doc.text("----------------------------------------------------------------", 20, 150);
+            doc.setFontSize(10);
+            doc.text("Bu rapor Hatay Kadin Kooperatifi icin yapay zeka tarafindan uretilmistir.", 20, 160);
+
+            // 3. Dosyayı Bilgisayara İndir
+            doc.save("KoopAI_Satis_Raporu.pdf");
+
+            // 4. Başarı Mesajını Göster
+            Swal.fire('Başarılı', 'Satış Analiz Raporu (PDF) başarıyla oluşturuldu ve indirildi.', 'success');
+        });
+    }
+
+// E-Fatura Oluşturma İşlemi ve Arayüz Güncelleme
+function generateInvoice(orderId, customerName, productDetails, totalAmount, btnElement) {
+        Swal.fire({
+            title: 'Fatura Kesiliyor...',
+            text: `${customerName} için e-fatura KoopAI tarafından oluşturuluyor.`,
+            timer: 1500,
+            showConfirmButton: false,
+            didOpen: () => { Swal.showLoading(); }
+        }).then(() => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Fatura Başlığı ve İçeriği
+            doc.setFontSize(22);
+            doc.setTextColor(75, 107, 80);
+            doc.text("KoopAI E-Fatura", 20, 20);
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text("Tarih: " + new Date().toLocaleDateString('tr-TR'), 20, 30);
+            doc.text("Fatura No: " + orderId.replace('#', 'INV-'), 20, 38);
+            doc.text("----------------------------------------------------------------", 20, 45);
+            doc.setFontSize(14);
+            doc.text("Müşteri Bilgileri:", 20, 55);
+            doc.setFontSize(12);
+            doc.text("İsim: " + customerName, 25, 65);
+            doc.setFontSize(14);
+            doc.text("Sipariş Detayı:", 20, 85);
+            doc.setFontSize(12);
+            doc.text("Ürün: " + productDetails, 25, 95);
+            doc.text("Toplam Tutar: " + totalAmount, 25, 105);
+            doc.text("----------------------------------------------------------------", 20, 120);
+            doc.setFontSize(10);
+            doc.text("Bizi tercih ettiğiniz icin teşekkür ederiz.", 20, 130);
+            doc.text("Bu fatura KoopAI otomasyon sistemi ile otomatik üretilmiştir.", 20, 138);
+
+            // PDF'i Bilgisayara İndir
+            doc.save(`Fatura_${customerName.replace(' ', '_')}_${orderId}.pdf`);
+
+            // --- YENİ EKLENEN KISIM: ARAYÜZÜ GÜNCELLEME ---
+            if (btnElement) {
+                const tr = btnElement.closest('tr');
+                
+                // 1. Etiketi Güncelle: Hazırlanıyor -> Kargolandı
+                const statusCell = tr.cells[5];
+                statusCell.innerHTML = '<span class="badge bg-success">Kargolandı</span>';
+
+                // 2. Butonu Güncelle: Fatura Kes -> Tamamlandı (Devre Dışı)
+                const actionCell = tr.cells[6];
+                actionCell.innerHTML = '<button class="btn btn-sm btn-secondary" disabled>Tamamlandı</button>';
+            }
+
+            // Başarı Mesajı
+            Swal.fire('Başarılı!', 'E-Fatura oluşturuldu, indirildi ve sipariş tamamlandı.', 'success');
+
+            addDeliveryToShipping(orderId, customerName);
+
+            updateDashboardCounts();
+        });
+    }
+
+// Kargo Sayfasına Yeni Teslimat Ekleyen Fonksiyon
+function addDeliveryToShipping(orderId, customerName) {
+        const kargoList = document.getElementById('dynamic-kargo-list');
+        
+        const newDeliveryHtml = `
+            <div class="mb-4 border-bottom pb-3 animate__animated animate__fadeIn">
+                <p class="mb-1 fw-bold">${orderId} - ${customerName} <span class="float-end text-primary">Yeni Çıktı</span></p>
+                <div class="progress" style="height: 15px;">
+                    <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" style="width: 15%">%15</div>
+                </div>
+                <small class="text-muted">KoopAI Notu: Fatura kesildi, kurye bekleniyor.</small>
+            </div>
+        `;
+        
+        // Yeni kargoyu listenin en üstüne ekle
+        kargoList.insertAdjacentHTML('afterbegin', newDeliveryHtml);
+    }
+
+// TABLODAKİ VERİLERİ SAYIP ÖZET EKRANINI DİNAMİK GÜNCELLEYEN FONKSİYON
+function updateDashboardCounts() {
+        const rows = document.querySelectorAll('#sec-siparis table tbody tr');
+        let bekleyenCount = 0;
+        let hazirlaniyorCount = 0;
+
+        rows.forEach(tr => {
+            const statusCell = tr.cells[5];
+            if (statusCell) {
+                const statusText = statusCell.innerText;
+                if (statusText.includes('Bekliyor')) bekleyenCount++;
+                if (statusText.includes('Hazırlanıyor')) hazirlaniyorCount++; // Fatura bekleyenler Kargoya verileceklerdir
+            }
+        });
+
+        // Sayıları özet ekranındaki HTML ID'lerine yazdır
+        document.getElementById('count-bekleyen').innerText = bekleyenCount;
+        document.getElementById('count-kargo').innerText = hazirlaniyorCount;
+    }
+
+    // Sayfa ilk yüklendiğinde sayıları hemen hesapla
+    document.addEventListener('DOMContentLoaded', updateDashboardCounts);
+
+// STOK GÜNCELLEME VE DİNAMİK RENK YÖNETİMİ
+function updateStock(btnElement, productName, unit) {
+        Swal.fire({
+            title: `${productName} Stok Girişi`,
+            text: `Lütfen güncel stok miktarını giriniz (${unit}):`,
+            input: 'number',
+            inputAttributes: {
+                min: 0,
+                step: 1
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Güncelle',
+            cancelButtonText: 'İptal',
+            confirmButtonColor: '#4b6b50'
+        }).then((result) => {
+            if (result.isConfirmed && result.value !== "") {
+                const newStock = parseInt(result.value);
+                
+                // Butonun bulunduğu kartın içindeki <p> (Stok yazısı) etiketini bul
+                const cardDiv = btnElement.parentElement;
+                const stockTextElement = cardDiv.querySelector('p');
+
+                // Mantıksal Kontrol: Stok 10 ve altındaysa Kritik (Kırmızı), değilse İyi (Yeşil) yap
+                if (newStock <= 10) {
+                    stockTextElement.className = "text-danger fw-bold mb-3"; // Rengi kırmızı yap
+                    stockTextElement.innerHTML = `Stok: ${newStock} ${unit} (Kritik)`;
+                    
+                    Swal.fire('Kritik Seviye!', `${productName} stoğu çok azaldı. Tedarik sürecini başlatmanız önerilir.`, 'warning');
+                } else {
+                    stockTextElement.className = "text-success fw-bold mb-3"; // Rengi yeşil yap
+                    stockTextElement.innerHTML = `Stok: ${newStock} ${unit} (İyi)`;
+                    
+                    Swal.fire('Başarılı', `Stok güncellendi. Yeni miktar: ${newStock} ${unit}`, 'success');
+                }
+            }
+        });
+    }
+
+// ONAYLANAN SİPARİŞİ STOKTAN DÜŞEN KÖPRÜ FONKSİYON
+function syncStockOnApproval(productName, quantityText) {
+        // Miktar metninden sadece rakamı çekiyor
+        const quantityToDeduct = parseInt(quantityText.match(/\d+/)[0]);
+        
+        // Tablodaki ürün isimlerini, Stok kartlarındaki başlıklarla eşleştiren sözlük (Mapper)
+        const productMap = {
+            "Zeytinyagi": "Zeytinyağı",
+            "Soguk Sikim Zeytinyagi": "Zeytinyağı",
+            "Defne Sabunu": "Defne Sabunu",
+            "Aci Biber Salcasi": "Acı Biber Salçası",
+            "Nar Eksisi": "Nar Ekşisi"
+        };
+
+        const targetCardTitle = productMap[productName.trim()] || productName.trim();
+
+        // Sayfadaki tüm stok kartlarını tara ve doğru olanı bul
+        const cards = document.querySelectorAll('#sec-stok .card');
+        cards.forEach(card => {
+            const titleElement = card.querySelector('.card-title');
+            
+            // Eğer kartın başlığı bizim aradığımız ürünle eşleşiyorsa
+            if (titleElement && titleElement.innerText.includes(targetCardTitle)) {
+                const stockTextElement = card.querySelector('p');
+                
+                // "Stok: 45 Kavanoz (İyi)" metninin içinden mevcut sayıyı (45) ve birimi (Kavanoz) bul
+                const match = stockTextElement.innerText.match(/Stok:\s*(\d+)\s*(.*)\s*\(/);
+                if (match) {
+                    let currentStock = parseInt(match[1]);
+                    let unit = match[2].trim();
+                    
+                    // Yeni stoğu hesapla (Eksiye düşmesini engelle)
+                    let newStock = currentStock - quantityToDeduct;
+                    if (newStock < 0) newStock = 0; 
+
+                    // Yeni stoğu karta yazdır ve 10'un altındaysa alarm rengine (kırmızı) geçir
+                    if (newStock <= 10) {
+                        stockTextElement.className = "text-danger fw-bold mb-3 animate__animated animate__flash";
+                        stockTextElement.innerHTML = `Stok: ${newStock} ${unit} (Kritik)`;
+                    } else {
+                        stockTextElement.className = "text-success fw-bold mb-3";
+                        stockTextElement.innerHTML = `Stok: ${newStock} ${unit} (İyi)`;
+                    }
+                }
+            }
+        });
     }
 </script>
 </body>

@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy import or_
+from dotenv import load_dotenv
 
 # LangChain ve Google GenAI kütüphaneleri
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
@@ -12,14 +13,15 @@ from langchain_core.tools import tool, create_retriever_tool
 from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage
 
-# Veritabanı modüllerimiz
+# Veritabanı modülleri
 from database import create_db, SessionLocal, Product, Order
 
-os.environ["GOOGLE_API_KEY"] = "AIzaSyCE5_PAMFj9yEI_FDzVoLiOa8xS_RCw-7k"
+# API Key
+load_dotenv()
 
 app = FastAPI(title="KoopAI - Hatay Kadın Kooperatifi", version="1.0")
 
-# Templates klasörünü tanımlıyoruz
+# Templates klasörü tanımı
 templates = Jinja2Templates(directory="templates")
 
 # --- 1. VERİTABANI BAŞLATMA VE ÖRNEK VERİ EKLEME ---
@@ -46,7 +48,7 @@ embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
 vectorstore = Chroma.from_texts(documents, embeddings, collection_name="koop_data")
 retriever = vectorstore.as_retriever(search_kwargs={"k": 2})
 
-# RAG Retriever'ı bir Agent Aracına (Tool) dönüştürüyoruz
+# RAG Retriever'ı bir Agent Aracına (Tool) dönüştürür
 rag_tool = create_retriever_tool(
     retriever,
     "kooperatif_bilgileri_getir",
@@ -71,10 +73,10 @@ tools = [rag_tool, stok_ve_fiyat_sorgula]
 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.3)
 
 system_prompt = """Sen 6 Şubat depremlerinden sonra Hatay'da kurulan bir kadın kooperatifinin yapay zeka asistanı olan KoopAI'sın.
-Amacın müşterilere sıcak, samimi ve umut verici bir dille yanıt vermek.
-Sana verilen araçları (tools) kullanarak doğru bilgileri çek. Asla kendi kendine stok veya fiyat uydurma."""
+Amacın kooperatif yöneticilerine ve müşterilere sıcak, samimi ve Hatay şivesi esintileri taşıyan bir dille yanıt vermek.
+Eğer senden mail veya mesaj taslağı hazırlaman istenirse, son derece profesyonel ama abartmadan yöresel samimiyeti koruyan bir metin yaz."""
 
-# LangGraph ile çok daha hızlı ve akıllı bir ajan oluşturuyoruz
+# LangGraph ile çok daha hızlı ve akıllı bir ajan oluşturur
 agent_executor = create_react_agent(llm, tools, prompt=system_prompt)
 
 # --- 5. FASTAPI UÇ NOKTASI (ENDPOINT) ---
@@ -86,10 +88,50 @@ async def chat_with_koopai(request: ChatRequest):
     # LangGraph ajanı mesaj listesi (messages) ile çalışır
     sonuc = agent_executor.invoke({"messages": [HumanMessage(content=request.mesaj)]})
     
-    # Dönen mesaj listesinden en sonuncusunu (KoopAI'nin yanıtını) alıyoruz
+    # Dönen mesaj listesinden en sonuncusunu (KoopAI'nin yanıtını) alır
     yanit_metni = sonuc["messages"][-1].content
+
+    # Eğer Gemini saf metin yerine obje/liste döndürdüyse, içinden sadece metni söküp alır
+    if isinstance(yanit_metni, list):
+        temiz_metin = []
+        for parca in yanit_metni:
+            if isinstance(parca, str):
+                temiz_metin.append(parca)
+            elif isinstance(parca, dict) and "text" in parca:
+                temiz_metin.append(parca["text"])
+        yanit_metni = "\n".join(temiz_metin)
+    elif not isinstance(yanit_metni, str):
+        yanit_metni = str(yanit_metni)
     
     return {"yanit": yanit_metni}
+
+@app.post("/api/otomatik-sms")
+async def otomatik_sms_gonder():
+    # Gerçek bir senaryoda burada veritabanından 'Kargolandı' durumundaki müşteriler çekilir
+    # Ajanın yeteneğini göstermek için dinamik bir SMS taslağı ürettim
+    
+    prompt = """Sistemdeki aktif kargolar için otomatik SMS tetiklendi. 
+    Müşterilere kargolarının yola çıktığını haber veren, profesyonel ama samimi, çok kısa (maksimum 2 cümle) bir toplu SMS metni yazar mısın? 
+    KESİNLİKLE abartılı bir şive veya yerel ağız kullanma. Sadece Hatay'ın o meşhur misafirperverliğini ve tatlı dilini hissettiren, profesyonel, zarif ve anlaşılır bir Türkçe kullan. 
+    Mesajın sonuna KoopAI imzasını ekle."""
+    
+    sonuc = agent_executor.invoke({"messages": [HumanMessage(content=prompt)]})
+    sms_metni = sonuc["messages"][-1].content
+    
+    # EĞER GEMINI METİN YERİNE OBJE DÖNDÜRÜRSE DÜZELT:
+    if isinstance(sms_metni, list):
+        temiz_metin = [p["text"] for p in sms_metni if isinstance(p, dict) and "text" in p]
+        sms_metni = "\n".join(temiz_metin) if temiz_metin else str(sms_metni)
+    elif not isinstance(sms_metni, str):
+        sms_metni = str(sms_metni)
+
+    # Arka planda sunucu loglarına yazdırıyor
+    print("--- SİSTEM LOGU: SMS SİSTEMİ TETİKLENDİ ---")
+    print(f"Gönderilecek Metin: {sms_metni}")
+    print("Durum: Başarıyla Telekomünikasyon API'sine (Simülasyon) iletildi.")
+    print("-------------------------------------------")
+
+    return {"durum": "basarili", "uretilen_sms": sms_metni}
 
 # Sitenin ana sayfasına (Kök dizine) girildiğinde index.html'i göster
 @app.get("/")
