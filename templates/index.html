@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KoopAI - Hatay Kadın Kooperatifi Yönetimi</title>
+    <title>KoopAI | Hatay Kadın Kooperatifi Yönetimi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="/static/logo.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -49,7 +50,10 @@
 <div class="d-flex">
     <div class="sidebar d-flex flex-column" style="width: 260px;">
         <div class="sidebar-brand text-center">
-            <i class="fas fa-leaf text-success me-2"></i>KoopAI
+            <span class="fs-4 fw-bold d-flex align-items-center">
+                <img src="/static/logo.png" alt="KoopAI Logo" width="35" height="35" class="me-2 rounded-circle shadow-sm">
+                KoopAI
+            </span>
         </div>
         <ul class="nav flex-column mb-auto">
             <li class="nav-item">
@@ -621,18 +625,18 @@ function generateInvoice(orderId, customerName, productDetails, totalAmount, btn
             doc.text("Fatura No: " + orderId.replace('#', 'INV-'), 20, 38);
             doc.text("----------------------------------------------------------------", 20, 45);
             doc.setFontSize(14);
-            doc.text("Müşteri Bilgileri:", 20, 55);
+            doc.text("Musteri Bilgileri:", 20, 55);
             doc.setFontSize(12);
-            doc.text("İsim: " + customerName, 25, 65);
+            doc.text("Isim: " + customerName, 25, 65);
             doc.setFontSize(14);
-            doc.text("Sipariş Detayı:", 20, 85);
+            doc.text("Siparis Detayi:", 20, 85);
             doc.setFontSize(12);
-            doc.text("Ürün: " + productDetails, 25, 95);
+            doc.text("Urun: " + productDetails, 25, 95);
             doc.text("Toplam Tutar: " + totalAmount, 25, 105);
             doc.text("----------------------------------------------------------------", 20, 120);
             doc.setFontSize(10);
-            doc.text("Bizi tercih ettiğiniz icin teşekkür ederiz.", 20, 130);
-            doc.text("Bu fatura KoopAI otomasyon sistemi ile otomatik üretilmiştir.", 20, 138);
+            doc.text("Bizi tercih ettiginiz icin tesekkur ederiz.", 20, 130);
+            doc.text("Bu fatura KoopAI otomasyon sistemi ile otomatik uretilmistir.", 20, 138);
 
             // PDF'i Bilgisayara İndir
             doc.save(`Fatura_${customerName.replace(' ', '_')}_${orderId}.pdf`);

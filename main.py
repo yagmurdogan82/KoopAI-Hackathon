@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy import or_
 from dotenv import load_dotenv
@@ -20,6 +21,7 @@ from database import create_db, SessionLocal, Product, Order
 load_dotenv()
 
 app = FastAPI(title="KoopAI - Hatay Kadın Kooperatifi", version="1.0")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Templates klasörü tanımı
 templates = Jinja2Templates(directory="templates")
